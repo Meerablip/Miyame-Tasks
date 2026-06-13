@@ -25,12 +25,15 @@ export async function GET(request: NextRequest) {
     const where: Record<string, unknown> = {};
 
     // If Employee, restrict to their own tasks.
-    // If Director, allow filtering by assigneeId, otherwise show all.
+    // If Director: 'self=true' → own tasks only; 'assigneeId=X' → specific employee; else → all.
     if (payload.role === "EMPLOYEE") {
       where.assigneeId = payload.userId;
     } else if (payload.role === "DIRECTOR") {
+      const self = searchParams.get("self");
       const assigneeId = searchParams.get("assigneeId");
-      if (assigneeId) {
+      if (self === "true") {
+        where.assigneeId = payload.userId;
+      } else if (assigneeId) {
         where.assigneeId = assigneeId;
       }
     }
@@ -122,6 +125,16 @@ export async function POST(request: NextRequest) {
         site: true,
       },
     });
+
+    // Notify employee when Director assigns a task
+    if (payload.role === "DIRECTOR" && body.assigneeId && body.assigneeId !== payload.userId) {
+      await prisma.notification.create({
+        data: {
+          content: `${payload.fullName} assigned you a task: "${name}"`,
+          userId: body.assigneeId,
+        },
+      });
+    }
 
     return Response.json({ task }, { status: 201 });
   } catch (error) {

@@ -179,11 +179,17 @@ export default function EmployeeTodoPage() {
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
 
   const getToken = () => localStorage.getItem("token") || "";
+  const getRole = () => {
+    try {
+      const u = localStorage.getItem("user");
+      return u ? JSON.parse(u).role : "EMPLOYEE";
+    } catch { return "EMPLOYEE"; }
+  };
   const today = new Date().toISOString().split("T")[0];
 
   const fetchTasks = useCallback(async () => {
     try {
-      let url = `/api/tasks?date=${today}`;
+      let url = `/api/tasks?date=${today}${getRole() === "DIRECTOR" ? "&self=true" : ""}`;
       if (filterCategory) url += `&category=${filterCategory}`;
       if (filterSite) url += `&site=${filterSite}`;
 
@@ -202,7 +208,7 @@ export default function EmployeeTodoPage() {
   const fetchCarryOverTasks = useCallback(async () => {
     // Fetch all incomplete tasks before today
     try {
-      const res = await fetch(`/api/tasks`, {
+      const res = await fetch(`/api/tasks${getRole() === "DIRECTOR" ? "?self=true" : ""}`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const data = await res.json();

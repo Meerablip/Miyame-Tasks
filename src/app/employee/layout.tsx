@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import "./dashboard.css";
+import NotificationBell from "@/components/NotificationBell";
 
 interface User {
   id: string;
@@ -168,8 +169,8 @@ export default function EmployeeLayout({
           </p>
         </div>
 
-        <div className="header-right">
-          {/* Filter button — passed via children context or page-specific */}
+        <div className="header-right" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <NotificationBell />
           <div id="header-actions" />
         </div>
       </header>
