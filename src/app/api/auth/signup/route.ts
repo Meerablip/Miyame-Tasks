@@ -74,6 +74,7 @@ export async function POST(request: Request) {
           fullName: user.fullName,
           email: user.email,
           role: user.role,
+          securityQuestion: user.securityQuestion,
         },
       },
       { status: 201 }

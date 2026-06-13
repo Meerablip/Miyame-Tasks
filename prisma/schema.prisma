@@ -2,12 +2,13 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -45,6 +46,7 @@ model Task {
   date         DateTime // Date the task is scheduled for
   alarm        DateTime?
   isCompleted  Boolean  @default(false)
+  orderIndex   Int      @default(0)
   
   // Relations
   categoryId   String
