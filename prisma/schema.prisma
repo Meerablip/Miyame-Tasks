@@ -1,0 +1,113 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  DIRECTOR
+  EMPLOYEE
+}
+
+model User {
+  id               String   @id @default(uuid())
+  fullName         String
+  dob              DateTime
+  email            String   @unique
+  role             Role     @default(EMPLOYEE)
+  passwordHash     String
+  securityQuestion String
+  securityAnswer   String
+
+  // Relations
+  tasksAssignedToMe Task[] @relation("AssignedTasks")
+  tasksICreated     Task[] @relation("CreatedTasks")
+  comments          Comment[]
+  notifications     Notification[]
+  sites             Site[] @relation("SiteCreator")
+  categories        Category[] @relation("CategoryCreator")
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Task {
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  priority     Boolean  @default(false)
+  date         DateTime // Date the task is scheduled for
+  alarm        DateTime?
+  isCompleted  Boolean  @default(false)
+  
+  // Relations
+  categoryId   String
+  category     Category @relation(fields: [categoryId], references: [id])
+  siteId       String
+  site         Site     @relation(fields: [siteId], references: [id])
+  
+  assigneeId   String
+  assignee     User     @relation("AssignedTasks", fields: [assigneeId], references: [id])
+  
+  assignerId   String?  // Nullable because employees create their own tasks
+  assigner     User?    @relation("CreatedTasks", fields: [assignerId], references: [id])
+  
+  comments     Comment[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  
+  creatorId   String?  // Track who created it
+  creator     User?    @relation("CategoryCreator", fields: [creatorId], references: [id])
+
+  tasks       Task[]
+  
+  createdAt   DateTime @default(now())
+}
+
+model Site {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  
+  creatorId   String?
+  creator     User?    @relation("SiteCreator", fields: [creatorId], references: [id])
+
+  tasks       Task[]
+  
+  createdAt   DateTime @default(now())
+}
+
+model Comment {
+  id          String   @id @default(uuid())
+  content     String
+  
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id])
+  
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+
+  createdAt   DateTime @default(now())
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  content     String
+  isRead      Boolean  @default(false)
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  createdAt   DateTime @default(now())
+}

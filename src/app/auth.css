@@ -1,0 +1,75 @@
+/* Auth-specific styles */
+
+.logo-placeholder {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #e63946, #1d1d1d);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.auth-error {
+  width: 100%;
+  max-width: 360px;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: #fff0f0;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  color: #dc2626;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+[data-theme='dark'] .auth-error {
+  background: #3b1212;
+  border-color: #5c2020;
+  color: #fca5a5;
+}
+
+.input-field-select {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238C8C9A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+}
+
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.auth-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* Scrollbar styling for the signup form */
+.auth-card {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.auth-card::-webkit-scrollbar {
+  width: 4px;
+}
+
+.auth-card::-webkit-scrollbar-thumb {
+  background: var(--input-border);
+  border-radius: 4px;
+}
+
+.auth-card::-webkit-scrollbar-track {
+  background: transparent;
+}
