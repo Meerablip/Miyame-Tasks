@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import CustomSelect from "@/components/CustomSelect";
 
 // --- Types ---
 interface User {
@@ -79,7 +80,16 @@ export default function DirectorBoardPage() {
   const [assignLoading, setAssignLoading] = useState(false);
 
   const getToken = () => localStorage.getItem("token") || "";
-  const todayStr = new Date().toISOString().split("T")[0];
+  const [targetDate, setTargetDate] = useState(new Date().toISOString().split("T")[0]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const d = params.get("date");
+    if (d) {
+      setTargetDate(d);
+      setAssignForm(prev => ({ ...prev, date: d }));
+    }
+  }, []);
 
   // --- Fetch all data ---
   const fetchData = useCallback(async () => {
@@ -104,7 +114,7 @@ export default function DirectorBoardPage() {
       await Promise.all(
         (empData.employees || []).map(async (emp: User) => {
           const res = await fetch(
-            `/api/tasks?assigneeId=${emp.id}&date=${todayStr}`,
+            `/api/tasks?assigneeId=${emp.id}&date=${targetDate}`,
             { headers }
           );
           if (res.ok) {
@@ -121,7 +131,7 @@ export default function DirectorBoardPage() {
     } finally {
       setLoading(false);
     }
-  }, [todayStr]);
+  }, [targetDate]);
 
   useEffect(() => {
     fetchData();
@@ -158,7 +168,7 @@ export default function DirectorBoardPage() {
   // --- Assign Task ---
   const handleAssignTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!assigningTo || !assignForm.name || !assignForm.categoryId || !assignForm.siteId) return;
+    if (!assigningTo || !assignForm.name || !assignForm.categoryId) return;
     setAssignLoading(true);
     try {
       const res = await fetch("/api/tasks", {
@@ -177,7 +187,7 @@ export default function DirectorBoardPage() {
         setAssignForm({
           name: "",
           description: "",
-          date: todayStr,
+          date: targetDate,
           alarm: "",
           priority: false,
           categoryId: "",
@@ -225,8 +235,21 @@ export default function DirectorBoardPage() {
     );
   }
 
+  const isToday = targetDate === new Date().toISOString().split("T")[0];
+  const displayDate = new Date(targetDate + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+
   return (
     <div className="dir-board">
+      {!isToday && (
+        <div style={{ textAlign: "center", margin: "1rem 0 2rem 0", width: "100%" }}>
+          <h2 style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--primary)", letterSpacing: "-0.02em" }}>
+            Viewing: {displayDate}
+          </h2>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginTop: "0.25rem" }}>
+            Scheduling for the future
+          </p>
+        </div>
+      )}
       {/* Top bar: search + view toggle + filter */}
       <div className="board-toolbar">
         <div className="search-bar">
@@ -275,19 +298,21 @@ export default function DirectorBoardPage() {
 
       {/* Filter dropdowns */}
       {showFilters && (
-        <div className="filter-row">
-          <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
-            <option value="">All Categories</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-          <select value={filterSite} onChange={(e) => setFilterSite(e.target.value)}>
-            <option value="">All Sites</option>
-            {sites.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
+        <div className="filter-row" style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+          <div style={{ flex: 1 }}>
+            <CustomSelect
+              options={[{ value: "", label: "All Categories" }, ...categories.map(c => ({ value: c.id, label: c.name }))]}
+              value={filterCategory}
+              onChange={(v) => setFilterCategory(v as string)}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <CustomSelect
+              options={[{ value: "", label: "All Sites" }, ...sites.map(s => ({ value: s.id, label: s.name }))]}
+              value={filterSite}
+              onChange={(v) => setFilterSite(v as string)}
+            />
+          </div>
         </div>
       )}
 
@@ -317,7 +342,7 @@ export default function DirectorBoardPage() {
                     className="assign-btn"
                     onClick={() => {
                       setAssigningTo(emp);
-                      setAssignForm({ ...assignForm, date: todayStr });
+                      setAssignForm({ ...assignForm, date: targetDate });
                     }}
                   >
                     + Assign Task
@@ -395,7 +420,7 @@ export default function DirectorBoardPage() {
                   className="assign-btn board-assign"
                   onClick={() => {
                     setAssigningTo(emp);
-                    setAssignForm({ ...assignForm, date: todayStr });
+                    setAssignForm({ ...assignForm, date: targetDate });
                   }}
                 >
                   + Assign Task
@@ -535,31 +560,24 @@ export default function DirectorBoardPage() {
                 </div>
                 <div className="detail-row">
                   <label>Category *</label>
-                  <select
-                    className="input-field"
+                  <CustomSelect
+                    options={categories.map(c => ({ value: c.id, label: c.name }))}
                     value={assignForm.categoryId}
-                    onChange={(e) => setAssignForm({ ...assignForm, categoryId: e.target.value })}
-                    required
-                  >
-                    <option value="">Select category</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+                    onChange={(v) => setAssignForm({ ...assignForm, categoryId: v as string })}
+                    placeholder="Select category"
+                  />
                 </div>
                 <div className="detail-row">
-                  <label>Site *</label>
-                  <select
-                    className="input-field"
+                  <label>Site (Optional)</label>
+                  <CustomSelect
+                    options={[
+                      { value: "", label: "None" },
+                      ...sites.map(s => ({ value: s.id, label: s.name }))
+                    ]}
                     value={assignForm.siteId}
-                    onChange={(e) => setAssignForm({ ...assignForm, siteId: e.target.value })}
-                    required
-                  >
-                    <option value="">Select site</option>
-                    {sites.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
+                    onChange={(v) => setAssignForm({ ...assignForm, siteId: v as string })}
+                    placeholder="Select site"
+                  />
                 </div>
                 <div className="detail-row">
                   <label>Priority</label>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import CustomSelect from "@/components/CustomSelect";
 
 interface Task {
   id: string;
@@ -26,16 +27,7 @@ export default function DirectorCalendarPage() {
   // Date-click popup
   const [clickedDate, setClickedDate] = useState<string | null>(null);
 
-  // Assign task modal state
-  const [showAssignFlow, setShowAssignFlow] = useState(false);
-  const [employees, setEmployees] = useState<User[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [sites, setSites] = useState<Site[]>([]);
-  const [selectedEmp, setSelectedEmp] = useState<User | null>(null);
-  const [assignForm, setAssignForm] = useState({
-    name: "", description: "", categoryId: "", siteId: "", priority: false,
-  });
-  const [assignLoading, setAssignLoading] = useState(false);
+  // Assign task modal state (REMOVED - navigating instead)
 
   const getToken = () => localStorage.getItem("token") || "";
   const getUserId = () => {
@@ -46,19 +38,13 @@ export default function DirectorCalendarPage() {
     async function fetchData() {
       const headers = { Authorization: `Bearer ${getToken()}` };
       try {
-        const [allRes, ownRes, empRes, catRes, siteRes] = await Promise.all([
+        const [allRes, ownRes] = await Promise.all([
           fetch("/api/tasks", { headers }), // All tasks (director sees everything)
           fetch("/api/tasks?self=true", { headers }), // Director's own tasks
-          fetch("/api/employees", { headers }),
-          fetch("/api/categories", { headers }),
-          fetch("/api/sites", { headers }),
         ]);
 
         if (allRes.ok) setAllTasks((await allRes.json()).tasks || []);
         if (ownRes.ok) setOwnTasks((await ownRes.json()).tasks || []);
-        if (empRes.ok) setEmployees((await empRes.json()).employees || []);
-        if (catRes.ok) setCategories((await catRes.json()).categories || []);
-        if (siteRes.ok) setSites((await siteRes.json()).sites || []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -112,42 +98,9 @@ export default function DirectorCalendarPage() {
   };
 
   const handleAssignTask = () => {
-    setShowAssignFlow(true);
+    router.push(`/director?date=${clickedDate}`);
     setClickedDate(null);
-    setSelectedEmp(null);
-    setAssignForm({ name: "", description: "", categoryId: "", siteId: "", priority: false });
   };
-
-  const handleSubmitAssign = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedEmp || !clickedDate && !showAssignFlow) return;
-    setAssignLoading(true);
-    try {
-      const dateToUse = clickedDate || todayStr;
-      const res = await fetch("/api/tasks", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${getToken()}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...assignForm,
-          date: new Date(dateToUse).toISOString(),
-          assigneeId: selectedEmp.id,
-        }),
-      });
-      if (res.ok) {
-        setShowAssignFlow(false);
-        setSelectedEmp(null);
-        // Reload
-        window.location.reload();
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setAssignLoading(false);
-    }
-  }, [selectedEmp, clickedDate, showAssignFlow, assignForm, todayStr]);
 
   const renderDays = () => {
     const days = [];
@@ -211,16 +164,20 @@ export default function DirectorCalendarPage() {
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
         </button>
         <div className="cal-title">
-          <select value={currentDate.getMonth()} onChange={(e) => setMonth(Number(e.target.value))} className="cal-select">
-            {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((m, i) => (
-              <option key={m} value={i}>{m}</option>
-            ))}
-          </select>
-          <select value={currentDate.getFullYear()} onChange={(e) => setYear(Number(e.target.value))} className="cal-select">
-            {Array.from({ length: 11 }, (_, i) => 2024 + i).map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
+          <div style={{ width: "160px" }}>
+            <CustomSelect
+              options={["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((m, i) => ({ value: i, label: m }))}
+              value={currentDate.getMonth()}
+              onChange={(v) => setMonth(Number(v))}
+            />
+          </div>
+          <div style={{ width: "110px" }}>
+            <CustomSelect
+              options={Array.from({ length: 11 }, (_, i) => 2024 + i).map(y => ({ value: y, label: y.toString() }))}
+              value={currentDate.getFullYear()}
+              onChange={(v) => setYear(Number(v))}
+            />
+          </div>
         </div>
         <button onClick={() => changeMonth(1)} className="cal-nav-btn">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
@@ -256,58 +213,7 @@ export default function DirectorCalendarPage() {
         </>
       )}
 
-      {/* Assign Task Flow */}
-      {showAssignFlow && (
-        <>
-          <div className="popup-overlay" onClick={() => setShowAssignFlow(false)} />
-          <div className="assign-flow-panel">
-            {!selectedEmp ? (
-              <>
-                <h3>Select Employee</h3>
-                <div className="emp-list-flow">
-                  {employees.map(emp => (
-                    <button key={emp.id} className="emp-flow-item" onClick={() => setSelectedEmp(emp)}>
-                      <div className="emp-avatar-sm">{emp.fullName.charAt(0).toUpperCase()}</div>
-                      <span>{emp.fullName}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <form onSubmit={handleSubmitAssign}>
-                <h3>Assign to {selectedEmp.fullName}</h3>
-                <div className="assign-field">
-                  <label>Task Name *</label>
-                  <input type="text" value={assignForm.name} onChange={e => setAssignForm({...assignForm, name: e.target.value})} required />
-                </div>
-                <div className="assign-field">
-                  <label>Description</label>
-                  <textarea value={assignForm.description} onChange={e => setAssignForm({...assignForm, description: e.target.value})} rows={2} />
-                </div>
-                <div className="assign-row">
-                  <div className="assign-field">
-                    <label>Category *</label>
-                    <select value={assignForm.categoryId} onChange={e => setAssignForm({...assignForm, categoryId: e.target.value})} required>
-                      <option value="">Select</option>
-                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                  </div>
-                  <div className="assign-field">
-                    <label>Site *</label>
-                    <select value={assignForm.siteId} onChange={e => setAssignForm({...assignForm, siteId: e.target.value})} required>
-                      <option value="">Select</option>
-                      {sites.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <button type="submit" className="assign-submit" disabled={assignLoading}>
-                  {assignLoading ? "Assigning..." : "Assign Task"}
-                </button>
-              </form>
-            )}
-          </div>
-        </>
-      )}
+
 
       <style jsx>{`
         .calendar-container { padding: 1rem; height: calc(100vh - 60px); display: flex; flex-direction: column; }
@@ -315,17 +221,20 @@ export default function DirectorCalendarPage() {
         .cal-nav-btn { background: none; border: none; color: var(--text-main); cursor: pointer; }
         .cal-title { display: flex; gap: 0.5rem; }
         .cal-select { background: transparent; color: var(--text-main); font-size: 1.25rem; font-weight: 600; border: none; outline: none; cursor: pointer; appearance: none; }
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; flex: 1; }
-        .calendar-day-header { text-align: center; font-weight: 600; color: var(--text-muted); font-size: 0.85rem; padding-bottom: 1rem; }
-        .calendar-day { position: relative; background: var(--input-bg); border-radius: var(--radius-md); min-height: 80px; padding: 0.5rem; cursor: pointer; transition: background 0.2s; display: flex; flex-direction: column; align-items: center; }
-        .calendar-day:hover { background: var(--input-border); }
-        .calendar-day.empty { background: transparent; cursor: default; }
-        .calendar-day.today { box-shadow: inset 0 0 0 2px var(--primary); }
-        .day-number { font-weight: 600; color: var(--text-main); margin-top: 0.25rem; }
-        .future-task-indicator { position: absolute; top: 0; left: 10%; right: 10%; height: 4px; border-radius: 4px 4px 0 0; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); flex: 1; border: 1px solid var(--input-border); border-radius: var(--radius-md); overflow: hidden; }
+        .calendar-day-header { text-align: center; font-weight: 600; color: var(--text-muted); font-size: 0.85rem; padding: 0.75rem 0; border-bottom: 1px solid var(--input-border); background: var(--bg-main); border-right: 1px solid var(--input-border); }
+        .calendar-day-header:last-child { border-right: none; }
+        .calendar-day { position: relative; background: var(--card-bg); border-right: 1px solid var(--input-border); border-bottom: 1px solid var(--input-border); min-height: 100px; padding: 0.5rem; cursor: pointer; transition: background 0.2s; display: flex; flex-direction: column; align-items: flex-start; }
+        .calendar-day:nth-child(7n) { border-right: none; }
+        .calendar-day:hover { background: var(--input-bg); }
+        .calendar-day.empty { background: var(--bg-main); cursor: default; }
+        .calendar-day.today { background: rgba(99, 102, 241, 0.05); }
+        .calendar-day.today .day-number { background: var(--primary); color: #fff; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin-top: -0.15rem; margin-left: -0.15rem; }
+        .day-number { font-weight: 600; color: var(--text-main); margin-top: 0.25rem; font-size: 0.95rem; }
+        .future-task-indicator { width: 100%; height: 6px; border-radius: 0; margin-top: 4px; }
         .future-task-indicator.blue { background: var(--primary); }
-        .future-task-indicator.pink { background: #ec4899; top: 5px; }
-        .completion-circle { width: 12px; height: 12px; border-radius: 50%; margin-top: auto; margin-bottom: 0.5rem; }
+        .future-task-indicator.pink { background: #ec4899; }
+        .completion-circle { width: 14px; height: 14px; border-radius: 50%; margin-top: auto; align-self: flex-end; }
         .completion-circle.green { background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,0.4); }
         .completion-circle.yellow { background: #eab308; box-shadow: 0 0 8px rgba(234,179,8,0.4); }
 

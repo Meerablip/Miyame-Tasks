@@ -31,13 +31,19 @@ export default function EmployeeLayout({
       return;
     }
 
-    const parsed = JSON.parse(storedUser);
-    if (parsed.role !== "EMPLOYEE") {
+    try {
+      const parsed = JSON.parse(storedUser);
+      if (parsed.role !== "EMPLOYEE") {
+        router.push("/");
+        return;
+      }
+      setUser(parsed);
+    } catch (err) {
+      console.error("Invalid user data in localStorage:", err);
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
       router.push("/");
-      return;
     }
-
-    setUser(parsed);
   }, [router]);
 
   const navItems = [

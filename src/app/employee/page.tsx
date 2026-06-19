@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import CustomSelect from "@/components/CustomSelect";
+import CustomTimePicker from "@/components/CustomTimePicker";
 import {
   DndContext,
   closestCenter,
@@ -100,7 +102,7 @@ function SortableTaskItem({
           <div className="task-name">{task.name}</div>
           <div className="task-meta">
             <span className="task-tag">{task.category.name}</span>
-            <span className="task-tag">{task.site.name}</span>
+            {task.site && <span className="task-tag">{task.site.name}</span>}
             {task.alarm && (
               <span className="task-time">
                 🔔 {new Date(task.alarm).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -185,7 +187,13 @@ export default function EmployeeTodoPage() {
       return u ? JSON.parse(u).role : "EMPLOYEE";
     } catch { return "EMPLOYEE"; }
   };
-  const today = new Date().toISOString().split("T")[0];
+  const [today, setToday] = useState(new Date().toISOString().split("T")[0]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const d = params.get("date");
+    if (d) setToday(d);
+  }, []);
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -282,7 +290,7 @@ export default function EmployeeTodoPage() {
 
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!taskName.trim() || !taskCategory || !taskSite) return;
+    if (!taskName.trim() || !taskCategory) return;
 
     setSaving(true);
     try {
@@ -377,10 +385,22 @@ export default function EmployeeTodoPage() {
     );
   }
 
+  const isToday = today === new Date().toISOString().split("T")[0];
+  const displayDate = new Date(today + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+
   return (
     <>
-      {/* Filter button in header-right area */}
-      <div style={{ position: "fixed", top: "0.75rem", right: "1.25rem", zIndex: 110 }}>
+      {!isToday && (
+        <div style={{ textAlign: "center", margin: "1rem 0 2rem 0", width: "100%" }}>
+          <h2 style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--primary)", letterSpacing: "-0.02em" }}>
+            Viewing: {displayDate}
+          </h2>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginTop: "0.25rem" }}>
+            Scheduling for the future
+          </p>
+        </div>
+      )}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem", position: "relative", zIndex: 110 }}>
         <button
           className="filter-btn"
           onClick={() => setFilterOpen(!filterOpen)}
@@ -389,43 +409,41 @@ export default function EmployeeTodoPage() {
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="4" y1="6" x2="20" y2="6" /><line x1="6" y1="12" x2="18" y2="12" /><line x1="8" y1="18" x2="16" y2="18" />
           </svg>
-
-          {filterOpen && (
-            <div className="filter-dropdown" onClick={(e) => e.stopPropagation()}>
-              <h4>Category</h4>
-              <select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-              >
-                <option value="">All Categories</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-
-              <h4>Site</h4>
-              <select
-                value={filterSite}
-                onChange={(e) => setFilterSite(e.target.value)}
-              >
-                <option value="">All Sites</option>
-                {sites.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-
-              <button
-                className="filter-clear"
-                onClick={() => {
-                  setFilterCategory("");
-                  setFilterSite("");
-                }}
-              >
-                Clear Filters
-              </button>
-            </div>
-          )}
         </button>
+
+        {filterOpen && (
+          <div className="filter-dropdown" onClick={(e) => e.stopPropagation()}>
+            <h4>Category</h4>
+            <CustomSelect
+              options={[
+                { value: "", label: "All Categories" },
+                ...categories.map(c => ({ value: c.id, label: c.name }))
+              ]}
+              value={filterCategory}
+              onChange={(v) => setFilterCategory(v as string)}
+            />
+
+            <h4 style={{ marginTop: "1rem" }}>Site</h4>
+            <CustomSelect
+              options={[
+                { value: "", label: "All Sites" },
+                ...sites.map(s => ({ value: s.id, label: s.name }))
+              ]}
+              value={filterSite}
+              onChange={(v) => setFilterSite(v as string)}
+            />
+
+            <button
+              className="filter-clear"
+              onClick={() => {
+                setFilterCategory("");
+                setFilterSite("");
+              }}
+            >
+              Clear Filters
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Carry-over tasks from previous days */}
@@ -522,12 +540,9 @@ export default function EmployeeTodoPage() {
           <div className="add-task-row">
             <div className="input-group" style={{ marginBottom: 0 }}>
               <label className="input-label">SCHEDULE TIME</label>
-              <input
-                type="time"
-                className="input-field"
+              <CustomTimePicker
                 value={taskTime}
-                onChange={(e) => setTaskTime(e.target.value)}
-                style={{ paddingLeft: "1rem" }}
+                onChange={setTaskTime}
               />
             </div>
 
@@ -560,34 +575,25 @@ export default function EmployeeTodoPage() {
           <div className="add-task-row">
             <div className="input-group" style={{ marginBottom: 0 }}>
               <label className="input-label">CATEGORY *</label>
-              <select
-                className="input-field input-field-select"
+              <CustomSelect
+                options={categories.map(c => ({ value: c.id, label: c.name }))}
                 value={taskCategory}
-                onChange={(e) => setTaskCategory(e.target.value)}
-                style={{ paddingLeft: "1rem" }}
-                required
-              >
-                <option value="" disabled>Select category</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+                onChange={(v) => setTaskCategory(v as string)}
+                placeholder="Select category"
+              />
             </div>
 
             <div className="input-group" style={{ marginBottom: 0 }}>
-              <label className="input-label">SITE *</label>
-              <select
-                className="input-field input-field-select"
+              <label className="input-label">SITE (Optional)</label>
+              <CustomSelect
+                options={[
+                  { value: "", label: "None" },
+                  ...sites.map(s => ({ value: s.id, label: s.name }))
+                ]}
                 value={taskSite}
-                onChange={(e) => setTaskSite(e.target.value)}
-                style={{ paddingLeft: "1rem" }}
-                required
-              >
-                <option value="" disabled>Select site</option>
-                {sites.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+                onChange={(v) => setTaskSite(v as string)}
+                placeholder="Select site"
+              />
             </div>
           </div>
 
@@ -605,7 +611,7 @@ export default function EmployeeTodoPage() {
           <button
             type="submit"
             className="add-task-save"
-            disabled={saving || !taskName.trim() || !taskCategory || !taskSite}
+            disabled={saving || !taskName.trim() || !taskCategory}
           >
             {saving ? "Saving..." : (
               <>

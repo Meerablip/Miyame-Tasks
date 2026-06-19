@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import CustomSelect from "@/components/CustomSelect";
 import "./auth.css";
 
 type AuthView = "login" | "signup" | "forgot";
@@ -360,16 +361,16 @@ export default function AuthPage() {
                 <span className="input-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 </span>
-                <select
-                  id="signup-role"
-                  className="input-field input-field-select"
-                  value={signupRole}
-                  onChange={(e) => setSignupRole(e.target.value)}
-                  required
-                >
-                  <option value="EMPLOYEE">Employee</option>
-                  <option value="DIRECTOR">Director</option>
-                </select>
+                <div style={{ flex: 1, position: "relative", zIndex: 110 }}>
+                  <CustomSelect
+                    options={[
+                      { value: "EMPLOYEE", label: "Employee" },
+                      { value: "DIRECTOR", label: "Director" }
+                    ]}
+                    value={signupRole}
+                    onChange={(v) => setSignupRole(v as string)}
+                  />
+                </div>
               </div>
             </div>
 
@@ -409,20 +410,20 @@ export default function AuthPage() {
                 <span className="input-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                 </span>
-                <select
-                  id="signup-security-question"
-                  className="input-field input-field-select"
-                  value={signupSecurityQuestion}
-                  onChange={(e) => setSignupSecurityQuestion(e.target.value)}
-                  required
-                >
-                  <option value="" disabled>Choose a security question</option>
-                  <option value="What is the name of your first pet?">What is the name of your first pet?</option>
-                  <option value="What was the name of your first school?">What was the name of your first school?</option>
-                  <option value="In what city were you born?">In what city were you born?</option>
-                  <option value="What is your mother's maiden name?">What is your mother&apos;s maiden name?</option>
-                  <option value="What was the make of your first car?">What was the make of your first car?</option>
-                </select>
+                <div style={{ flex: 1, position: "relative", zIndex: 100 }}>
+                  <CustomSelect
+                    options={[
+                      { value: "What is the name of your first pet?", label: "What is the name of your first pet?" },
+                      { value: "What was the name of your first school?", label: "What was the name of your first school?" },
+                      { value: "In what city were you born?", label: "In what city were you born?" },
+                      { value: "What is your mother's maiden name?", label: "What is your mother's maiden name?" },
+                      { value: "What was the make of your first car?", label: "What was the make of your first car?" }
+                    ]}
+                    value={signupSecurityQuestion}
+                    onChange={(v) => setSignupSecurityQuestion(v as string)}
+                    placeholder="Choose a security question"
+                  />
+                </div>
               </div>
             </div>
 

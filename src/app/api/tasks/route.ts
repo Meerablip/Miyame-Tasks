@@ -101,9 +101,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { name, description, date, alarm, priority, categoryId, siteId } = body;
 
-    if (!name || !categoryId || !siteId || !date) {
+    if (!name || !categoryId || !date) {
       return Response.json(
-        { error: "Name, category, site, and date are required." },
+        { error: "Name, category, and date are required." },
         { status: 400 }
       );
     }
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
         alarm: alarm ? new Date(alarm) : null,
         priority: priority || false,
         categoryId,
-        siteId,
+        siteId: siteId || null,
         assigneeId: payload.role === "DIRECTOR" && body.assigneeId ? body.assigneeId : payload.userId,
         assignerId: payload.role === "DIRECTOR" ? payload.userId : null,
       },

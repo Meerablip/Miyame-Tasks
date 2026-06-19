@@ -51,8 +51,8 @@ model Task {
   // Relations
   categoryId   String
   category     Category @relation(fields: [categoryId], references: [id])
-  siteId       String
-  site         Site     @relation(fields: [siteId], references: [id])
+  siteId       String?
+  site         Site?    @relation(fields: [siteId], references: [id])
   
   assigneeId   String
   assignee     User     @relation("AssignedTasks", fields: [assigneeId], references: [id])

@@ -31,13 +31,19 @@ export default function DirectorLayout({
       return;
     }
 
-    const parsed = JSON.parse(storedUser);
-    if (parsed.role !== "DIRECTOR") {
+    try {
+      const parsed = JSON.parse(storedUser);
+      if (parsed.role !== "DIRECTOR") {
+        router.push("/");
+        return;
+      }
+      setUser(parsed);
+    } catch (err) {
+      console.error("Invalid user data in localStorage:", err);
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
       router.push("/");
-      return;
     }
-
-    setUser(parsed);
   }, [router]);
 
   const navItems = [

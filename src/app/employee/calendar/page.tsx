@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import CustomSelect from "@/components/CustomSelect";
 
 interface Task {
   id: string;
@@ -134,24 +135,20 @@ export default function EmployeeCalendarPage() {
         </button>
         
         <div className="cal-title">
-          <select 
-            value={currentDate.getMonth()} 
-            onChange={(e) => setMonth(Number(e.target.value))}
-            className="cal-select"
-          >
-            {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((m, i) => (
-              <option key={m} value={i}>{m}</option>
-            ))}
-          </select>
-          <select 
-            value={currentDate.getFullYear()} 
-            onChange={(e) => setYear(Number(e.target.value))}
-            className="cal-select"
-          >
-            {Array.from({ length: 11 }, (_, i) => 2024 + i).map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
+          <div style={{ width: "160px" }}>
+            <CustomSelect
+              options={["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((m, i) => ({ value: i, label: m }))}
+              value={currentDate.getMonth()}
+              onChange={(v) => setMonth(Number(v))}
+            />
+          </div>
+          <div style={{ width: "110px" }}>
+            <CustomSelect
+              options={Array.from({ length: 11 }, (_, i) => 2024 + i).map(y => ({ value: y, label: y.toString() }))}
+              value={currentDate.getFullYear()}
+              onChange={(v) => setYear(Number(v))}
+            />
+          </div>
         </div>
 
         <button onClick={() => changeMonth(1)} className="cal-nav-btn">
@@ -203,58 +200,77 @@ export default function EmployeeCalendarPage() {
         .calendar-grid {
           display: grid;
           grid-template-columns: repeat(7, 1fr);
-          gap: 8px;
           flex: 1;
+          border: 1px solid var(--input-border);
+          border-radius: var(--radius-md);
+          overflow: hidden;
         }
         .calendar-day-header {
           text-align: center;
           font-weight: 600;
           color: var(--text-muted);
           font-size: 0.85rem;
-          padding-bottom: 1rem;
+          padding: 0.75rem 0;
+          border-bottom: 1px solid var(--input-border);
+          background: var(--bg-main);
+          border-right: 1px solid var(--input-border);
         }
+        .calendar-day-header:last-child { border-right: none; }
         .calendar-day {
           position: relative;
-          background: var(--input-bg);
-          border-radius: var(--radius-md);
-          min-height: 80px;
+          background: var(--card-bg);
+          border-right: 1px solid var(--input-border);
+          border-bottom: 1px solid var(--input-border);
+          min-height: 100px;
           padding: 0.5rem;
           cursor: pointer;
           transition: background 0.2s;
           display: flex;
           flex-direction: column;
-          align-items: center;
+          align-items: flex-start;
         }
+        .calendar-day:nth-child(7n) { border-right: none; }
         .calendar-day:hover {
-          background: var(--input-border);
+          background: var(--input-bg);
         }
         .calendar-day.empty {
-          background: transparent;
+          background: var(--bg-main);
           cursor: default;
         }
         .calendar-day.today {
-          box-shadow: inset 0 0 0 2px var(--primary);
+          background: rgba(99, 102, 241, 0.05);
+        }
+        .calendar-day.today .day-number {
+          background: var(--primary);
+          color: #fff;
+          width: 28px;
+          height: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          margin-top: -0.15rem;
+          margin-left: -0.15rem;
         }
         .day-number {
           font-weight: 600;
           color: var(--text-main);
           margin-top: 0.25rem;
+          font-size: 0.95rem;
         }
         .future-task-indicator {
-          position: absolute;
-          top: 0;
-          left: 10%;
-          right: 10%;
-          height: 4px;
+          width: 100%;
+          height: 6px;
           background: var(--primary);
-          border-radius: 4px 4px 0 0;
+          border-radius: 0;
+          margin-top: 4px;
         }
         .completion-circle {
-          width: 12px;
-          height: 12px;
+          width: 14px;
+          height: 14px;
           border-radius: 50%;
           margin-top: auto;
-          margin-bottom: 0.5rem;
+          align-self: flex-end;
         }
         .completion-circle.green {
           background: #22c55e;
